@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Blokawy</title>
+<link href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap" rel="stylesheet">
+<style>
+:root{--board:#141958;--cell:#212882;--gold:#ffd23f;--muted:#b4bdff;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;min-height:100vh;color:#fff;font-family:'Lilita One',system-ui,sans-serif;letter-spacing:.3px;display:flex;justify-content:center;touch-action:none;user-select:none;
+background:radial-gradient(circle at 50% 0%,#4a63ff 0,#2f3fd0 45%,#1b2294 100%) fixed}
+body.gold{background:radial-gradient(circle at 50% 0%,#8a5a00 0,#3a2000 55%,#140a00 100%) fixed}
+#app{width:100%;max-width:440px;padding:10px 14px 20px;position:relative}
+/* gem blocks */
+.c.f,.p i.f,.tile{position:relative;background:linear-gradient(145deg,color-mix(in srgb,var(--c) 55%,#fff),var(--c) 50%,color-mix(in srgb,var(--c) 72%,#000));
+box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--c) 70%,#000),inset 0 3px 0 rgba(255,255,255,.55),inset 0 -4px 0 rgba(0,0,0,.3),inset 3px 0 0 rgba(255,255,255,.18)}
+.c.f::after,.p i.f::after,.tile::after{content:"";position:absolute;left:14%;top:12%;width:42%;height:22%;border-radius:50%;background:rgba(255,255,255,.5);transform:rotate(-28deg)}
+body.gold .c.f,body.gold .p i.f{background:linear-gradient(145deg,#fff6b0,#ffc400 48%,#a86d00);
+box-shadow:inset 0 0 0 3px var(--c),inset 0 4px 0 rgba(255,255,255,.7),inset 0 -4px 0 rgba(110,55,0,.5),0 0 10px var(--c);animation:glow 1.5s ease-in-out infinite}
+body.gold .c.f:nth-child(3n){animation-delay:.5s}body.gold .c.f:nth-child(3n+1){animation-delay:1s}
+@keyframes glow{50%{filter:brightness(1.3) saturate(1.3);box-shadow:inset 0 0 0 3px var(--c),inset 0 4px 0 rgba(255,255,255,.8),0 0 18px var(--c),0 0 30px #ffd23f}}
+/* hud */
+.hd{display:flex;align-items:center;justify-content:space-between;height:62px}
+.crown{font-size:22px;color:var(--gold);width:96px;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+.big{font-size:46px;text-shadow:0 4px 0 rgba(0,0,0,.3)}
+.rbs{width:96px;display:flex;gap:6px;justify-content:flex-end}
+.rb{width:42px;height:42px;border-radius:50%;border:0;font-size:20px;color:#fff;background:linear-gradient(#7c8cff,#4757e6);box-shadow:0 4px 0 #26309e,inset 0 2px 0 rgba(255,255,255,.5)}
+.rb:active,.btn:active,.tool:active{transform:translateY(3px);box-shadow:0 1px 0 #26309e}
+.info{display:flex;justify-content:space-between;font-size:16px;margin:2px 4px 6px}
+.info b{color:var(--gold);font-weight:400}
+.bar{height:12px;background:rgba(0,0,0,.3);border-radius:7px;overflow:hidden;margin:0 2px 12px;box-shadow:inset 0 2px 3px rgba(0,0,0,.4)}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#ffd23f,#ff7a00);transition:width .3s;border-radius:7px}
+#wrap{position:relative}
+#grid{display:grid;grid-template-columns:repeat(8,1fr);gap:2px;background:var(--board);padding:6px;border-radius:14px;aspect-ratio:1;box-shadow:0 6px 0 rgba(0,0,0,.3),inset 0 0 0 3px #3a45b8}
+body.gold #grid{background:#2a1500;box-shadow:0 6px 0 rgba(0,0,0,.4),inset 0 0 0 3px #ffc400,0 0 24px rgba(255,196,0,.55)}
+.c{background:var(--cell);border-radius:5px}
+body.gold .c:not(.f){background:#3d2200}
+.c.pv{opacity:.7}
+.c.clr{animation:clr .23s forwards}
+@keyframes clr{50%{filter:brightness(2.5);transform:scale(1.12)}100%{transform:scale(.2);opacity:0}}
+#pop{position:absolute;left:0;right:0;top:38%;text-align:center;font-size:38px;color:var(--gold);text-shadow:0 3px 0 rgba(0,0,0,.5);pointer-events:none;opacity:0}
+#pop.go{animation:pop .9s ease-out}
+@keyframes pop{0%{opacity:0;transform:scale(.6)}20%{opacity:1;transform:scale(1.15)}100%{opacity:0;transform:translateY(-50px)}}
+#tray{display:flex;justify-content:space-around;align-items:center;height:128px;margin-top:12px}
+.p{display:grid;gap:2px;padding:8px;touch-action:none;cursor:grab}
+.p i{width:20px;height:20px;border-radius:5px;display:block}
+.tools{display:flex;gap:10px;margin-top:6px}
+.tool{flex:1;font:inherit;font-size:16px;border:0;border-radius:18px;padding:8px 6px;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;
+background:linear-gradient(#ff9f43,#ee5a24);box-shadow:0 5px 0 #a8360f,inset 0 2px 0 rgba(255,255,255,.5)}
+.tool.b{background:linear-gradient(#a55eea,#6c35c9);box-shadow:0 5px 0 #43208c,inset 0 2px 0 rgba(255,255,255,.5)}
+.tool.on{outline:3px solid #fff}
+.tool:disabled{filter:grayscale(.8) brightness(.8)}
+.tool span{font-size:26px}.tool small{display:block;font-size:13px;color:#ffe9a8}
+.tool div{text-align:left;line-height:1.1}
+#ghost{position:fixed;pointer-events:none;display:none;z-index:9}
+/* overlays */
+#ov{position:fixed;inset:0;background:rgba(8,10,50,.78);display:none;align-items:center;justify-content:center;z-index:40;padding:20px}
+#box{background:linear-gradient(#2c3bd0,#1a2070);border:4px solid #6a7aff;border-radius:24px;padding:22px;text-align:center;max-width:340px;width:100%;box-shadow:0 8px 0 rgba(0,0,0,.35)}
+#box h2{margin:0 0 6px;font-size:32px;color:var(--gold);font-weight:400}
+#box p{margin:4px 0 14px;color:var(--muted);font-size:18px}
+.btn{--b:#ffd23f;--b2:#ffe98a;--d:#b36b00;font:inherit;font-size:22px;border:0;border-radius:18px;padding:12px 30px;min-width:210px;margin:6px 0;color:#3a2300;
+background:linear-gradient(var(--b2),var(--b));box-shadow:0 6px 0 var(--d),inset 0 2px 0 rgba(255,255,255,.6)}
+.btn.blue{--b:#4a8bff;--b2:#8ab8ff;--d:#1d46b3;color:#fff}
+.btn.purple{--b:#a55eea;--b2:#cf9bff;--d:#5b2aa8;color:#fff}
+.btn.g{--b:#3a45b8;--b2:#5565e0;--d:#1d2570;color:#fff;font-size:18px}
+.map{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.map button{font:inherit;font-size:24px;aspect-ratio:1;border:0;border-radius:14px;background:linear-gradient(#ffe98a,#ffd23f);color:#3a2300;box-shadow:0 4px 0 #b36b00}
+.map button.cur{outline:3px solid #fff}
+.map button.gl{background:linear-gradient(#fff6b0,#ffc400,#d98a00);box-shadow:0 4px 0 #8a5000,0 0 14px #ffc400}
+.map button:disabled{background:#2a3190;color:#6f7bd8;box-shadow:none}
+#menu{position:fixed;inset:0;z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;
+background:radial-gradient(circle at 50% 20%,#5b73ff 0,#2f3fd0 50%,#151c85 100%)}
+.logo{display:flex;justify-content:center;margin-bottom:6px}
+.tile{width:42px;height:50px;font-size:32px;display:inline-flex;align-items:center;justify-content:center;border-radius:10px;margin:2px;text-shadow:0 3px 0 rgba(0,0,0,.35);animation:bob 1.8s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-9px) rotate(-2deg)}}
+.tag{color:var(--muted);font-size:20px;margin-bottom:30px}
+.mb{margin-top:22px;font-size:18px;color:var(--gold)}
+@media (prefers-reduced-motion:reduce){.tile,body.gold .c.f,body.gold .p i.f{animation:none}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="hd">
+    <div class="crown">👑 <span id="bs">0</span></div>
+    <div class="big" id="sc">0</div>
+    <div class="rbs"><button class="rb" id="home" aria-label="Menu">🏠</button><button class="rb" id="gear" aria-label="Settings">⚙️</button></div>
+  </div>
+  <div class="info"><span id="lv"></span><span>Goal <b id="tg">0</b></span><span>🪙 <b id="co">0</b></span></div>
+  <div class="bar"><i id="bar"></i></div>
+  <div id="wrap"><div id="grid"></div><div id="pop"></div></div>
+  <div id="tray"></div>
+  <div class="tools">
+    <button class="tool" id="bRef"><span>🔄</span><div>New pieces<small>🪙 20</small></div></button>
+    <button class="tool b" id="bBomb"><span>💣</span><div>Bomb<small>🪙 40</small></div></button>
+  </div>
+</div>
+<div id="menu">
+  <div class="logo" id="logo"></div>
+  <div class="tag">Pop the blocks. Win the crown.</div>
+  <button class="btn" id="mStart">START</button>
+  <button class="btn blue" id="mLv">LEVELS</button>
+  <button class="btn purple" id="mSet">SETTINGS</button>
+  <div class="mb">👑 Best <b id="mb">0</b> &nbsp; 🪙 <b id="mc">0</b></div>
+</div>
+<div id="ghost"></div>
+<div id="ov"><div id="box"></div></div>
+<script>
+const N=8,GOLD=11,COLORS=['#e53935','#fb8c00','#fdd835','#43a047','#26c6da','#1e88e5','#a233c9'];
+const SHAPES=[[[0,0]],[[0,0],[0,1]],[[0,0],[1,0]],[[0,0],[0,1],[0,2]],[[0,0],[1,0],[2,0]],[[0,0],[0,1],[0,2],[0,3]],[[0,0],[1,0],[2,0],[3,0]],[[0,0],[0,1],[1,0],[1,1]],[[0,0],[0,1],[0,2],[1,0],[1,1],[1,2],[2,0],[2,1],[2,2]],[[0,0],[1,0],[1,1]],[[0,0],[0,1],[1,0]],[[0,1],[1,0],[1,1]],[[0,0],[0,1],[1,1]],[[0,0],[1,0],[2,0],[2,1]],[[0,1],[1,1],[2,0],[2,1]],[[0,0],[0,1],[0,2],[1,1]],[[0,0],[0,1],[0,2],[1,0],[2,0]]];
+const LV=[[150,3],[300,5],[500,7],[750,9],[1050,11],[1400,13],[1800,15],[2300,17],[2900,19],[3600,21],[5000,12]];
+const $=id=>document.getElementById(id);
+let S={level:1,unlocked:1,coins:0,best:0,sound:true},grid,pieces,score,bomb=false,drag=null,over=false,busy=false,AC;
+const target=()=>LV[S.level-1][0];
+function load(){try{const d=JSON.parse(localStorage.getItem('blokawy_save')||'null');if(d)S=Object.assign(S,d)}catch(e){}}
+function save(){try{localStorage.setItem('blokawy_save',JSON.stringify(S))}catch(e){}}
+function beep(f,d=.12,t='sine'){if(!S.sound)return;try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.type=t;o.frequency.value=f;g.gain.setValueAtTime(.12,AC.currentTime);g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d)}catch(e){}}
+function newLevel(){
+  document.body.classList.toggle('gold',S.level===GOLD);
+  grid=Array.from({length:N},()=>Array(N).fill(0));
+  let pre=LV[S.level-1][1];
+  while(pre--)grid[Math.floor(Math.random()*N)][Math.floor(Math.random()*N)]=1+Math.floor(Math.random()*COLORS.length);
+  score=0;over=false;bomb=false;busy=false;newPieces();build();ui();
+}
+function newPieces(){pieces=[0,1,2].map(()=>({s:SHAPES[Math.floor(Math.random()*SHAPES.length)],c:1+Math.floor(Math.random()*COLORS.length)}))}
+function build(){
+  const g=$('grid');g.innerHTML='';
+  for(let i=0;i<N*N;i++){const d=document.createElement('div');d.className='c';g.appendChild(d)}
+  g.onclick=e=>{if(!bomb||busy)return;const i=[...g.children].indexOf(e.target.closest('.c'));if(i>=0)useBomb(Math.floor(i/N),i%N)};
+  paint();tray();
+}
+function paint(){
+  const cells=$('grid').children;
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){const el=cells[r*N+c],v=grid[r][c];el.className='c'+(v?' f':'');
+    if(v)el.style.setProperty('--c',COLORS[v-1]);else el.style.removeProperty('--c')}
+}
+function tray(){
+  const t=$('tray');t.innerHTML='';
+  pieces.forEach((p,i)=>{
+    const el=document.createElement('div');el.className='p';
+    if(!p){el.style.width='60px';t.appendChild(el);return}
+    const h=Math.max(...p.s.map(x=>x[0]))+1,w=Math.max(...p.s.map(x=>x[1]))+1;
+    el.style.gridTemplateColumns=`repeat(${w},20px)`;
+    for(let r=0;r<h;r++)for(let c=0;c<w;c++){const b=document.createElement('i');
+      if(p.s.some(x=>x[0]==r&&x[1]==c)){b.className='f';b.style.setProperty('--c',COLORS[p.c-1])}el.appendChild(b)}
+    el.addEventListener('pointerdown',e=>startDrag(e,i,el));
+    t.appendChild(el);
+  });
+}
+function ui(){
+  $('lv').innerHTML=S.level===GOLD?'<b>★ GOLD LEVEL</b>':'Level <b>'+S.level+'</b>/10';
+  $('sc').textContent=score;$('co').textContent=S.coins;$('mc').textContent=S.coins;
+  $('tg').textContent=target();$('bs').textContent=S.best;$('mb').textContent=S.best;
+  $('bar').style.width=Math.min(100,score/target()*100)+'%';
+  $('bRef').disabled=S.coins<20;$('bBomb').disabled=S.coins<40&&!bomb;
+  $('bBomb').classList.toggle('on',bomb);
+}
+function fits(s,r,c){return s.every(([a,b])=>{const y=r+a,x=c+b;return y>=0&&y<N&&x>=0&&x<N&&!grid[y][x]})}
+function startDrag(e,i,el){
+  if(over||bomb||busy)return;e.preventDefault();
+  const g=$('ghost');g.innerHTML=el.innerHTML;g.className='p';g.style.gridTemplateColumns=el.style.gridTemplateColumns;
+  const cs=$('grid').children[0].getBoundingClientRect().width;
+  g.querySelectorAll('i').forEach(b=>{b.style.width=b.style.height=cs+'px'});
+  g.style.gap='2px';g.style.padding='0';g.style.display='grid';
+  drag={i,cs,g};move(e);
+  window.addEventListener('pointermove',move);window.addEventListener('pointerup',end,{once:true});
+}
+function move(e){
+  if(!drag)return;const {cs,g,i}=drag,w=g.offsetWidth,h=g.offsetHeight;
+  const x=e.clientX-w/2,y=e.clientY-h-50;g.style.left=x+'px';g.style.top=y+'px';
+  const gr=$('grid').getBoundingClientRect();
+  const c=Math.round((x-gr.left-6)/(cs+2)),r=Math.round((y-gr.top-6)/(cs+2));
+  drag.r=r;drag.c=c;paint();
+  const p=pieces[i];
+  if(fits(p.s,r,c)){const cells=$('grid').children;p.s.forEach(([a,b])=>{const el=cells[(r+a)*N+c+b];el.classList.add('f','pv');el.style.setProperty('--c',COLORS[p.c-1])})}
+}
+function end(){
+  window.removeEventListener('pointermove',move);
+  if(!drag)return;const {i,r,c,g}=drag;g.style.display='none';drag=null;
+  const p=pieces[i];
+  if(p&&fits(p.s,r,c))place(i,r,c);else paint();
+}
+function popup(t){const p=$('pop');p.textContent=t;p.classList.remove('go');void p.offsetWidth;p.classList.add('go')}
+function place(i,r,c){
+  const p=pieces[i];p.s.forEach(([a,b])=>grid[r+a][c+b]=p.c);beep(300,.08);
+  let gain=p.s.length;
+  const rows=[],cols=[];
+  for(let k=0;k<N;k++){if(grid[k].every(v=>v))rows.push(k);if(grid.every(row=>row[k]))cols.push(k)}
+  const lines=rows.length+cols.length;
+  pieces[i]=null;if(pieces.every(x=>!x))newPieces();
+  paint();tray();
+  if(!lines){score+=gain;fin();return}
+  busy=true;const cells=$('grid').children;
+  rows.forEach(k=>{for(let x=0;x<N;x++)cells[k*N+x].classList.add('clr')});
+  cols.forEach(k=>{for(let y=0;y<N;y++)cells[y*N+k].classList.add('clr')});
+  gain+=lines*10*lines;S.coins+=lines*5;score+=gain;
+  popup((lines>1?['','','Great! ','Amazing! ','Incredible! '][Math.min(lines,4)]:'')+'+'+gain);
+  [520,620,740,880].slice(0,Math.min(lines,4)).forEach((f,n)=>setTimeout(()=>beep(f,.14,'triangle'),n*70));
+  setTimeout(()=>{rows.forEach(k=>{for(let x=0;x<N;x++)grid[k][x]=0});cols.forEach(k=>{for(let y=0;y<N;y++)grid[y][k]=0});busy=false;fin()},240);
+}
+function fin(){if(score>S.best)S.best=score;save();paint();ui();check()}
+function modal(h){$('box').innerHTML=h;$('ov').style.display='flex'}
+function closeM(){$('ov').style.display='none'}
+function check(){
+  if(score>=target()){
+    const bonus=30+S.level*10+(S.level===GOLD?150:0);S.coins+=bonus;beep(660,.3,'triangle');
+    if(S.level<GOLD){S.level++;S.unlocked=Math.max(S.unlocked,S.level);save();ui();
+      const g=S.level===GOLD;
+      modal(`<h2>${g?'✨ Golden Level unlocked!':'🎉 Level complete!'}</h2><p>You earned ${bonus} 🪙</p><button class="btn ${g?'':'blue'}" onclick="closeM();newLevel()">${g?'PLAY GOLD LEVEL':'NEXT LEVEL'}</button>`)}
+    else{save();ui();modal(`<h2>🏆 You are a legend!</h2><p>Golden Level cleared! +${bonus} 🪙</p><button class="btn" onclick="closeM();S.level=1;save();newLevel()">PLAY AGAIN</button>`)}
+    return;
+  }
+  const ok=pieces.some(p=>p&&grid.some((row,r)=>row.some((_,c)=>fits(p.s,r,c))));
+  if(!ok){over=true;beep(160,.4,'sawtooth');modal(`<h2>😵 No more moves</h2><p>Score: ${score}</p><button class="btn" onclick="closeM();newLevel()">TRY AGAIN</button>`)}
+}
+function useBomb(r,c){
+  bomb=false;S.coins-=40;beep(120,.3,'sawtooth');
+  for(let y=r-1;y<=r+1;y++)for(let x=c-1;x<=c+1;x++)if(y>=0&&y<N&&x>=0&&x<N)grid[y][x]=0;
+  save();paint();ui();
+}
+function mapView(){
+  let b='';for(let i=1;i<=GOLD;i++)b+=`<button ${i>S.unlocked?'disabled':''} class="${i==S.level?'cur ':''}${i==GOLD?'gl':''}" onclick="startLevel(${i})">${i>S.unlocked?'🔒':(i==GOLD?'★':i)}</button>`;
+  modal(`<h2>Levels</h2><div class="map">${b}</div><p>Clear level 10 to unlock the ★ Golden Level</p><button class="btn g" onclick="closeM()">BACK</button>`);
+}
+function startLevel(i){closeM();$('menu').style.display='none';S.level=i;newLevel()}
+function settings(){
+  modal(`<h2>Settings</h2><button class="btn blue" onclick="mapView()">LEVELS</button><br>
+  <button class="btn g" onclick="S.sound=!S.sound;save();settings()">${S.sound?'🔊 Sound: ON':'🔇 Sound: OFF'}</button><br>
+  <button class="btn g" onclick="if(confirm('Reset all progress?')){S={level:1,unlocked:1,coins:0,best:0,sound:true};save();closeM();newLevel()}">RESET PROGRESS</button><br>
+  <button class="btn" onclick="closeM()">CLOSE</button>`);
+}
+$('logo').innerHTML=[...'BLOKAWY'].map((ch,i)=>`<div class="tile" style="--c:${COLORS[i]};animation-delay:${i*.12}s">${ch}</div>`).join('');
+$('mStart').onclick=()=>{$('menu').style.display='none';if(over)newLevel()};
+$('mLv').onclick=mapView;$('mSet').onclick=settings;
+$('home').onclick=()=>{ui();$('menu').style.display='flex'};
+$('gear').onclick=settings;
+$('bRef').onclick=()=>{if(over||busy||S.coins<20)return;S.coins-=20;newPieces();save();tray();ui();check()};
+$('bBomb').onclick=()=>{if(over||busy)return;if(bomb)bomb=false;else if(S.coins>=40)bomb=true;ui()};
+load();if(S.level>GOLD||S.unlocked>GOLD){S.level=1;S.unlocked=Math.min(S.unlocked,GOLD)}newLevel();
+</script>
+</body>
+</html>
